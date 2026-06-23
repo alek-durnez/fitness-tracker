@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KrachtLog Cloud</title>
+<style>
+  :root {  
+    --graphite:#1A1A1C; --iron:#26262A; --border:#36363B;  
+    --chalk:#EDEAE2; --steel:#9A9CA0; --rust:#C1440E; --brass:#C9A227;  
+  }  
+  * { box-sizing: border-box; }  
+  body {  
+    margin: 0; background: var(--graphite); color: var(--chalk);  
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;  
+  }  
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }  
+  .display { text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em; }  
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }  
+  header { position: sticky; top: 0; z-index: 10; background: var(--graphite); border-bottom: 1px solid var(--border); }  
+  .header-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 0; }  
+  .brand { display: flex; align-items: center; gap: 10px; }  
+  .brand-icon { width: 26px; height: 26px; flex-shrink: 0; }  
+  .brand h1 { font-size: 20px; margin: 0; }  
+  .brand p { margin: 1px 0 0; font-size: 11px; color: var(--steel); }  
+  nav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }  
+  .tab-btn {  
+    padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;  
+    border: 1px solid var(--border); background: transparent; color: var(--steel); cursor: pointer;  
+  }  
+  .tab-btn.active { background: var(--rust); border-color: var(--rust); color: var(--chalk); }  
+  main { padding: 20px 0 60px; }  
+  .card { background: var(--iron); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 18px; }  
+  .flex { display: flex; }  
+  .between { justify-content: space-between; }  
+  .center-v { align-items: center; }  
+  .wrap-gap { flex-wrap: wrap; gap: 12px; }  
+  .stat-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 18px; }  
+  @media (min-width: 640px) { .stat-grid { grid-template-columns: repeat(4,1fr); } }  
+  .stat-card { background: var(--iron); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }  
+  .stat-label { font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: 0.05em; }  
+  .stat-value { font-size: 24px; font-weight: 600; margin-top: 4px; }  
+  .section-title { font-size: 16px; font-weight: 600; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.03em; }  
+  input, select, textarea {  
+    background: var(--graphite); border: 1px solid var(--border); border-radius: 6px;  
+    padding: 8px 10px; color: var(--chalk); font-size: 14px; width: 100%; font-family: inherit;  
+  }  
+  input:focus, select:focus, textarea:focus, button:focus { outline: 2px solid var(--rust); outline-offset: 1px; }  
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }  
+  .field-label { font-size: 11px; color: var(--steel); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }  
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }  
+  .btn-primary {  
+    background: var(--rust); color: var(--chalk); border: none; border-radius: 6px;  
+    padding: 10px 16px; font-weight: 600; font-size: 14px; cursor: pointer;  
+    display: inline-flex; align-items: center; gap: 6px;  
+  }  
+  .btn-secondary {  
+    background: transparent; border: 1px solid var(--border); color: var(--steel);  
+    border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 13px;  
+  }  
+  .btn-link { background: none; border: none; color: var(--steel); text-decoration: underline; cursor: pointer; font-size: 12px; }  
+  .btn-danger { background: var(--rust); color: var(--chalk); border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; }  
+  .icon-btn { background: transparent; border: none; color: var(--steel); cursor: pointer; padding: 4px; flex-shrink: 0; }  
+  .error-text { color: var(--rust); font-size: 13px; margin-bottom: 10px; }  
+  .empty { color: var(--steel); font-size: 14px; padding: 20px; text-align: center; }  
+  .history-group { background: var(--iron); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }  
+  .history-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }  
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }  
+  .history-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); }  
+  .history-row:last-child { border-bottom: none; }  
+  .pr-badge { font-size: 10px; font-weight: 700; color: var(--graphite); background: var(--brass); border-radius: 4px; padding: 1px 6px; letter-spacing: 0.04em; }  
+  .notes { font-size: 12px; color: var(--steel); margin-top: 4px; font-style: italic; }  
+  .plate-pr { display: flex; align-items: center; flex-shrink: 0; }  
+  .plate-pr .bar { width: 20px; height: 6px; background: var(--steel); border-radius: 2px; }  
+  .plate-pr .disc {  
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;  
+    border: 3px solid var(--graphite); margin: 0 -2px; box-shadow: inset 0 0 0 4px rgba(0,0,0,0.18);  
+  }  
+  .toast {  
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);  
+    background: var(--iron); border: 1px solid var(--brass); padding: 10px 18px;  
+    border-radius: 8px; font-size: 13px; z-index: 50;  
+  }  
+  .banner { padding: 10px 14px; border-radius: 6px; background: rgba(193,68,14,0.15); border: 1px solid var(--rust); font-size: 13px; margin-bottom: 16px; }  
+  .chart-svg { width: 100%; height: 240px; }  
+  .search-wrap { position: relative; flex: 1; min-width: 160px; }  
+  .search-wrap input { padding-left: 30px; }  
+  .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--steel); }  
+  .privacy-note { margin: 2px 0 0; font-size: 11px; color: var(--steel); }  
+  .cloud-status { font-size: 11px; font-weight: bold; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "krachtlog-entries-v1";
+  var CONFIG_KEY = "krachtlog-gh-config";
+  var ROUTINE_COLORS = { "Push": "#C1440E", "Pull A": "#C9A227", "Pull B": "#5C7A8A", "Legs": "#6B7A4A" };
+  var FALLBACK_PALETTE = ["#8B6F9E", "#9E6F6F", "#6F9E8B", "#9E9E6F"];
+
+  function routineColor(r) {
+    if (ROUTINE_COLORS[r]) return ROUTINE_COLORS[r];
+    var hash = 0;
+    for (var i = 0; i < r.length; i++) hash = (hash * 31 + r.charCodeAt(i)) % FALLBACK_PALETTE.length;
+    return FALLBACK_PALETTE[Math.abs(hash) % FALLBACK_PALETTE.length];
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var SEED_DATA = [
+    { id: "s1", date: "2026-06-16", routine: "Pull A", exercise: "Lat Pulldown (Parallel-grip)", weight: 25, sets: 3, reps: 12, notes: "Strong focus on pulling from elbows" }
+  ];
+
+  // ---- state ----
+  var entries = [];
+  var config = { token: "", repo: "", username: "", filename: "gym-data.json" };
+  var tab = "overzicht";
+  var confirmDeleteId = null;
+  var confirmWipe = false;
+  var filterRoutine = "all";
+  var search = "";
+  var selectedExercise = "";
+  var lastDate = todayISO();
+  var lastRoutine = "";
+  var toastMsg = "";
+  var toastTimer = null;
+  var syncState = "Niet geconfigureerd";
+
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  // ---- Load initial config ----
+  try {
+    var rawConfig = localStorage.getItem(CONFIG_KEY);
+    if (rawConfig) config = Object.assign(config, JSON.parse(rawConfig));
+  } catch(e) {}
+
+  // ---- Cloud Sync Mechanisms ----
+  function isConfigured() {
+    return config.token && config.repo && config.username;
+  }
+
+  function loadEntries() {
+    // Fallback lokaal laden
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) { entries = JSON.parse(raw); }
+    } catch (e) { }
+
+    if (!isConfigured()) {
+      if (entries.length === 0) entries = SEED_DATA.slice();
+      render();
+      return;
+    }
+
+    syncState = "Laden uit GitHub...";
+    render();
+
+    var url = `https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filename}`;
+    fetch(url, {
+      headers: { "Authorization": "token " + config.token, "Cache-Control": "no-cache" }
+    })
+    .then(function(res) {
+      if (res.status === 404) {
+        // Bestand bestaat nog niet in repo, push huidige data direct
+        saveEntries(true);
+        throw new Error("NewFile");
+      }
+      return res.json();
+    })
+    .then(function(data) {
+      var decoded = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ""))));
+      entries = JSON.parse(decoded);
+      localStorage.setItem(STORAGE_KEY, decoded);
+      syncState = "Gesynchroniseerd met GitHub";
+      render();
+    })
+    .catch(function(err) {
+      if (err.message !== "NewFile") {
+        syncState = "Offline mode (Gebruikt lokale cache)";
+        render();
+      }
+    });
+  }
+
+  function saveEntries(isInitial) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch (e) {}
+
+    if (!isConfigured()) { render(); return; }
+
+    syncState = "Opslaan in GitHub...";
+    render();
+
+    var url = `https://api.github.com/repos/${config.username}/${config.repo}/contents/${config.filename}`;
+    
+    // Haal eerst de SHA op als het geen gedwongen initial push is
+    fetch(url, {
+      headers: { "Authorization": "token " + config.token, "Cache-Control": "no-cache" }
+    })
+    .then(function(res) { return res.status === 200 ? res.json() : { sha: null }; })
+    .then(function(fileData) {
+      var contentPayload = btoa(unescape(encodeURIComponent(JSON.stringify(entries, null, 2))));
+      var bodyObj = {
+        message: "Gym Log Update — " + new Date().toISOString(),
+        content: contentPayload
+      };
+      if (fileData.sha) bodyObj.sha = fileData.sha;
+
+      return fetch(url, {
+        method: "PUT",
+        headers: { "Authorization": "token " + config.token, "Content-Type": "application/json" },
+        body: JSON.stringify(bodyObj)
+      });
+    })
+    .then(function(res) {
+      if (!res.ok) throw new Error();
+      syncState = "Gesynchroniseerd met GitHub";
+      showToast("Cloud-sync succesvol");
+      render();
+    })
+    .catch(function() {
+      syncState = "Fout bij opslaan! (Lokaal bewaard)";
+      render();
+    });
+  }
+
+  function formatDateNL(iso, opts) {
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("nl-NL", opts || { day: "numeric", month: "long", year: "numeric" });
+  }
+  function formatDateShort(iso) {
+    var d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" });
+  }
+
+  function computeAnalytics(list) {
+    var byExercise = {};
+    list.forEach(function (e) { (byExercise[e.exercise] = byExercise[e.exercise] || []).push(e); });
+    var prKeys = {};
+    var dailyMaxMap = {};
+    var exerciseSeries = {};
+    Object.keys(byExercise).forEach(function (ex) {
+      var byDate = {};
+      byExercise[ex].forEach(function (e) { byDate[e.date] = Math.max(byDate[e.date] || 0, e.weight); });
+      var dates = Object.keys(byDate).sort();
+      var runningMax = -Infinity;
+      var series = [];
+      dates.forEach(function (d, i) {
+        var w = byDate[d];
+        var isPR = i > 0 && w > runningMax;
+        if (isPR) prKeys[ex + "|" + d] = true;
+        dailyMaxMap[ex + "|" + d] = w;
+        series.push({ date: d, weight: w, isPR: isPR });
+        runningMax = Math.max(runningMax, w);
+      });
+      exerciseSeries[ex] = series;
+    });
+    return { prKeys: prKeys, dailyMaxMap: dailyMaxMap, exerciseSeries: exerciseSeries };
+  }
+
+  function uniqueSorted(arr) {
+    var seen = {}; var out = [];
+    arr.forEach(function (v) { if (!seen[v]) { seen[v] = true; out.push(v); } });
+    return out.sort();
+  }
+
+  function showToast(msg) {
+    toastMsg = msg;
+    var el = document.getElementById("toast");
+    if (el) { el.textContent = msg; el.style.display = "block"; }
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastMsg = "";
+      var t = document.getElementById("toast");
+      if (t) t.style.display = "none";
+    }, 2200);
+  }
+
+  function buildChartSVG(series) {
+    if (!series || series.length === 0) return '<div class="empty">Nog geen data voor deze oefening.</div>';
+    var w = 600, h = 220, padL = 36, padR = 10, padT = 14, padB = 24;
+    var weights = series.map(function (s) { return s.weight; });
+    var minW = Math.min.apply(null, weights), maxW = Math.max.apply(null, weights);
+    var range = (maxW - minW) || 1;
+    var stepX = series.length > 1 ? (w - padL - padR) / (series.length - 1) : 0;
+    function x(i) { return padL + i * stepX; }
+    function y(val) { return h - padB - ((val - minW) / range) * (h - padT - padB); }
+    var points = series.map(function (s, i) { return x(i) + "," + y(s.weight); }).join(" ");
+    var dots = series.map(function (s, i) {
+      var c = s.isPR ? "#C9A227" : "#C1440E";
+      var r = s.isPR ? 6 : 4;
+      return '<circle cx="' + x(i) + '" cy="' + y(s.weight) + '" r="' + r + '" fill="' + c + '" stroke="#1A1A1C" stroke-width="2"><title>' +
+        esc(formatDateNL(s.date)) + " \u2014 " + s.weight + " kg" + (s.isPR ? " \u00b7 Nieuw record" : "") + "</title></circle>";
+    }).join("");
+    var showAll = series.length <= 6;
+    var labels = series.map(function (s, i) {
+      if (showAll || i === 0 || i === series.length - 1) {
+        return '<text x="' + x(i) + '" y="' + (h - 6) + '" font-size="10" fill="#9A9CA0" text-anchor="middle">' + esc(formatDateShort(s.date)) + "</text>";
+      }
+      return "";
+    }).join("");
+    return '<svg viewBox="0 0 ' + w + " " + h + '" class="chart-svg" preserveAspectRatio="xMidYMid meet">' +
+      '<line x1="' + padL + '" y1="' + (h - padB) + '" x2="' + (w - padR) + '" y2="' + (h - padB) + '" stroke="#36363B" />' +
+      '<polyline points="' + points + '" fill="none" stroke="#C1440E" stroke-width="2" />' +
+      dots + labels + "</svg>";
+  }
+
+  var ICON_DUMBBELL = '<svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="#C1440E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5"/><path d="M4 4l2.5 2.5"/><path d="M17.5 17.5 20 20"/><rect x="2" y="2" width="4" height="4" rx="1"/><rect x="18" y="18" width="4" height="4" rx="1"/><path d="M9 7l-2-2"/><path d="M19 17l-2-2"/></svg>';
+  var ICON_TROPHY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 5H4a3 3 0 0 0 3 4M17 5h3a3 3 0 0 1-3 4"/></svg>';
+  var ICON_TRASH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>';
+  var ICON_SEARCH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9A9CA0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>';
+  var ICON_PLUS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
+  var ICON_COG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+
+  function PlatePR(weight, maxScale, isPR) {
+    var ratio = Math.min(Math.sqrt(weight / Math.max(maxScale, 1)), 1);
+    var size = Math.round(30 + ratio * 46);
+    var color = isPR ? "var(--brass)" : "var(--rust)";
+    var fontSize = size > 60 ? 15 : 12;
+    return '<div class="plate-pr"><div class="bar"></div>' +
+      '<div class="disc" style="width:' + size + "px;height:" + size + "px;background:" + color + ';font-size:' + fontSize + 'px;">' + weight + "</div>" +
+      '<div class="bar"></div></div>';
+  }
+
+  function getExerciseNames() { return uniqueSorted(entries.map(function (e) { return e.exercise; })); }
+  function getRoutineNames() { return uniqueSorted(entries.map(function (e) { return e.routine; })); }
+
+  function getStats(analytics) {
+    var sessions = uniqueSorted(entries.map(function (e) { return e.date; })).length;
+    var totalVolume = entries.reduce(function (sum, e) { return sum + e.weight * e.sets * e.reps; }, 0);
+    return {
+      sessions: sessions,
+      totalVolume: Math.round(totalVolume),
+      exerciseCount: getExerciseNames().length,
+      prCount: Object.keys(analytics.prKeys).length
+    };
+  }
+
+  function getLatestPR(analytics) {
+    var bestDate = null;
+    Object.keys(analytics.prKeys).forEach(function (k) {
+      var d = k.split("|")[1];
+      if (!bestDate || d > bestDate) bestDate = d;
+    });
+    if (!bestDate) return null;
+    var candidates = entries.filter(function (e) {
+      var key = e.exercise + "|" + e.date;
+      return e.date === bestDate && analytics.prKeys[key] && e.weight === analytics.dailyMaxMap[key];
+    });
+    if (candidates.length === 0) return null;
+    candidates.sort(function (a, b) { return b.weight - a.weight; });
+    var top = candidates[0];
+    var series = analytics.exerciseSeries[top.exercise] || [];
+    var idx = -1;
+    series.forEach(function (s, i) { if (s.date === top.date) idx = i; });
+    var prevWeight = idx > 0 ? series[idx - 1].weight : null;
+    return Object.assign({}, top, { others: candidates.length - 1, prevWeight: prevWeight });
+  }
+
+  function render() {
+    var analytics = computeAnalytics(entries);
+    var exerciseNames = getExerciseNames();
+    if (!selectedExercise || exerciseNames.indexOf(selectedExercise) === -1) {
+      var bestKey = null;
+      Object.keys(analytics.prKeys).forEach(function (k) {
+        if (!bestKey || k.split("|")[1] > bestKey.split("|")[1]) bestKey = k;
+      });
+      selectedExercise = bestKey ? bestKey.split("|")[0] : (exerciseNames[0] || "");
+    }
+
+    var html = "";
+    html += '<div class="toast" id="toast" style="display:' + (toastMsg ? "block" : "none") + ';">' + esc(toastMsg) + "</div>";
+    html += '<header><div class="wrap header-inner">';
+    html += '<div class="brand">' + ICON_DUMBBELL + '<div><h1 class="display">KrachtLog</h1><div class="cloud-status" style="color:' + (syncState.indexOf('Gesynchroniseerd') !== -1 ? 'var(--brass)' : 'var(--steel)') + ';">☁️ ' + esc(syncState) + '</div></div></div>';
+    html += "<nav>";
+    [["overzicht", "Overzicht"], ["loggen", "Loggen"], ["geschiedenis", "Geschiedenis"], ["settings", ICON_COG]].forEach(function (t) {
+      html += '<button class="tab-btn ' + (tab === t[0] ? "active" : "") + '" data-action="set-tab" data-tab="' + t[0] + '">' + t[1] + "</button>";
+    });
+    html += "</nav></div></header>";
+
+    html += '<main class="wrap">';
+
+    if (tab === "overzicht") html += renderOverzicht(analytics, exerciseNames);
+    else if (tab === "loggen") html += renderLoggen();
+    else if (tab === "settings") html += renderSettings();
+    else html += renderGeschiedenis(analytics);
+
+    html += "</main>";
+
+    document.getElementById("app").innerHTML = html;
+
+    if (tab === "overzicht") {
+      var cc = document.getElementById("chart-container");
+      if (cc) cc.innerHTML = buildChartSVG(analytics.exerciseSeries[selectedExercise]);
+    }
+  }
+
+  function renderOverzicht(analytics, exerciseNames) {
+    var html = "";
+    var latestPR = getLatestPR(analytics);
+    var maxW = Math.max.apply(null, entries.map(function (e) { return e.weight; }).concat([1]));
+
+    if (latestPR) {
+      var deltaTxt = "";
+      if (latestPR.prevWeight != null) {
+        var delta = (latestPR.weight - latestPR.prevWeight);
+        deltaTxt = " \u00b7 +" + (Math.round(delta * 10) / 10) + " kg t.o.v. vorige keer";
+      }
+      var othersTxt = latestPR.others > 0 ? " \u00b7 +" + latestPR.others + (latestPR.others > 1 ? " andere records" : " ander record") + " die dag" : "";
+      html += '<div class="card"><div class="flex between wrap-gap center-v">';
+      html += '<div><div class="flex center-v" style="gap:6px;color:var(--brass);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;">' + ICON_TROPHY + " Laatste record</div>";
+      html += '<h2 style="font-family:inherit;font-size:22px;margin:6px 0 2px;font-weight:600;">' + esc(latestPR.exercise) + "</h2>";
+      html += '<p style="margin:0;font-size:13px;color:var(--steel);">' + esc(formatDateNL(latestPR.date)) + deltaTxt + othersTxt + "</p></div>";
+      html += PlatePR(latestPR.weight, maxW, true);
+      html += "</div></div>";
+    } else {
+      html += '<div class="card" style="color:var(--steel);font-size:14px;">Nog geen records. Log een paar sessies.</div>';
+    }
+
+    var stats = getStats(analytics);
+    html += '<div class="stat-grid">';
+    [["Sessies", stats.sessions], ["Totaal volume", stats.totalVolume.toLocaleString("nl-NL") + " kg"], ["Oefeningen", stats.exerciseCount], ["Records", stats.prCount]].forEach(function (s) {
+      html += '<div class="stat-card"><div class="stat-label">' + s[0] + '</div><div class="stat-value mono">' + s[1] + "</div></div>";
+    });
+    html += "</div>";
+
+    html += '<div class="card">';
+    html += '<div class="flex between wrap-gap center-v" style="margin-bottom:12px;"><h3 class="section-title" style="margin:0;">Voortgang per oefening</h3>';
+    if (exerciseNames.length > 0) {
+      html += '<select id="exercise-select">';
+      exerciseNames.forEach(function (ex) {
+        html += '<option value="' + esc(ex) + '"' + (ex === selectedExercise ? " selected" : "") + ">" + esc(ex) + "</option>";
+      });
+      html += "</select>";
+    }
+    html += '</div><div id="chart-container"></div></div>';
+    return html;
+  }
+
+  function renderLoggen() {
+    var routineNames = getRoutineNames();
+    var exerciseNames = getExerciseNames();
+    var html = '<form id="log-form" class="card" style="max-width:480px;">';
+    html += '<h2 class="section-title">Sessie loggen</h2>';
+    html += '<div class="field"><span class="field-label">Datum *</span><input type="date" name="date" value="' + esc(lastDate) + '"></div>';
+    html += '<div class="field"><span class="field-label">Routine *</span><input list="routine-options" name="routine" value="' + esc(lastRoutine) + '" placeholder="bv. Push"><datalist id="routine-options">';
+    routineNames.forEach(function (r) { html += '<option value="' + esc(r) + '">'; });
+    html += '</datalist></div>';
+    html += '<div class="field"><span class="field-label">Oefening *</span><input list="exercise-options" name="exercise" placeholder="bv. Lat Pulldown"><datalist id="exercise-options">';
+    exerciseNames.forEach(function (x) { html += '<option value="' + esc(x) + '">'; });
+    html += '</datalist></div>';
+    html += '<div class="grid3">';
+    html += '<div class="field"><span class="field-label">Gewicht (kg) *</span><input type="number" step="0.5" min="0" name="weight"></div>';
+    html += '<div class="field"><span class="field-label">Sets *</span><input type="number" min="1" name="sets" value="3"></div>';
+    html += '<div class="field"><span class="field-label">Reps *</span><input type="number" min="1" name="reps" value="12"></div>';
+    html += '</div>';
+    html += '<div class="field"><span class="field-label">Notities</span><textarea name="notes" rows="2" placeholder="Optioneel"></textarea></div>';
+    html += '<div id="form-error" class="error-text" style="display:none;"></div>';
+    html += '<button type="submit" class="btn-primary">' + ICON_PLUS + " Sessie toevoegen</button>";
+    html += "</form>";
+    return html;
+  }
+
+  function renderSettings() {
+    var html = '<form id="settings-form" class="card" style="max-width:480px;">';
+    html += '<h2 class="section-title">GitHub Sync Instellingen</h2>';
+    html += '<p style="font-size:12px;color:var(--steel);">Sla je data op in een private GitHub repository om verlies te voorkomen.</p>';
+    html += '<div class="field"><span class="field-label">GitHub Username</span><input type="text" name="username" value="' + esc(config.username) + '" placeholder="bv. janjansen"></div>';
+    html += '<div class="field"><span class="field-label">Private Repo Naam</span><input type="text" name="repo" value="' + esc(config.repo) + '" placeholder="bv. gym-data"></div>';
+    html += '<div class="field"><span class="field-label">Personal Access Token (PAT)</span><input type="password" name="token" value="' + esc(config.token) + '" placeholder="ghp_xxxxxxxxxxxx"></div>';
+    html += '<button type="submit" class="btn-primary">Instellingen Opslaan</button>';
+    html += '</form>';
+    return html;
+  }
+
+  function buildHistoryListHTML(analytics) {
+    var filtered = entries.filter(function (e) {
+      if (filterRoutine !== "all" && e.routine !== filterRoutine) return false;
+      if (search.trim() && e.exercise.toLowerCase().indexOf(search.trim().toLowerCase()) === -1) return false;
+      return true;
+    });
+    var groups = {};
+    var order = [];
+    filtered.forEach(function (e) {
+      if (!groups[e.date]) { groups[e.date] = []; order.push(e.date); }
+      groups[e.date].push(e);
+    });
+    order.sort().reverse();
+
+    var html = "";
+    if (order.length === 0) html += '<div class="empty">Geen sessies gevonden.</div>';
+    order.forEach(function (date) {
+      var dayEntries = groups[date];
+      html += '<div class="history-group"><div class="history-head"><span class="dot" style="background:' + routineColor(dayEntries[0].routine) + ';"></span>';
+      html += '<span style="font-weight:600;font-size:14px;">' + esc(formatDateNL(date)) + '</span><span style="font-size:12px;color:var(--steel);">\u00b7 ' + esc(dayEntries[0].routine) + "</span></div><div>";
+      dayEntries.forEach(function (entry) {
+        var key = entry.exercise + "|" + entry.date;
+        var isPRRow = analytics.prKeys[key] && entry.weight === analytics.dailyMaxMap[key];
+        html += '<div class="history-row"><div style="flex:1;min-width:0;">';
+        html += '<div class="flex center-v" style="gap:6px;flex-wrap:wrap;"><span style="font-weight:500;font-size:14px;">' + esc(entry.exercise) + "</span>";
+        if (isPRRow) html += '<span class="pr-badge">PR</span>';
+        html += "</div>";
+        html += '<div class="mono" style="font-size:13px;color:var(--steel);margin-top:2px;">' + entry.weight + " kg \u00b7 " + entry.sets + " \u00d7 " + entry.reps + "</div>";
+        if (entry.notes) html += '<div class="notes">' + esc(entry.notes) + "</div>";
+        html += "</div>";
+        if (confirmDeleteId === entry.id) {
+          html += '<div class="flex center-v" style="gap:4px;flex-shrink:0;">';
+          html += '<button class="btn-danger" data-action="confirm-delete" data-id="' + entry.id + '">Ja</button>';
+          html += '<button class="btn-secondary" style="padding:4px 8px;font-size:11px;" data-action="cancel-delete">Nee</button></div>';
+        } else {
+          html += '<button class="icon-btn" data-action="ask-delete" data-id="' + entry.id + '" aria-label="Verwijderen">' + ICON_TRASH + "</button>";
+        }
+        html += "</div>";
+      });
+      html += "</div></div>";
+    });
+    return html;
+  }
+
+  function renderGeschiedenis(analytics) {
+    var routineNames = getRoutineNames();
+    var html = '<div class="card" style="margin-bottom:12px;"><div class="flex wrap-gap center-v">';
+    html += '<select id="filter-routine" style="width:auto;"><option value="all">Alle routines</option>';
+    routineNames.forEach(function (r) { html += '<option value="' + esc(r) + '"' + (r === filterRoutine ? " selected" : "") + ">" + esc(r) + "</option>"; });
+    html += '</select>';
+    html += '<div class="search-wrap">' + ICON_SEARCH.replace("<svg ", '<svg class="search-icon" ') + '<input id="search-input" placeholder="Zoek op oefening\u2026" value="' + esc(search) + '"></div>';
+    html += "</div></div>";
+
+    html += '<div id="history-list">' + buildHistoryListHTML(analytics) + "</div>";
+
+    html += '<div style="margin-top:8px;text-align:right;">';
+    if (confirmWipe) {
+      html += '<span style="font-size:12px;color:var(--steel);">Weet je het zeker? ';
+      html += '<button class="btn-link" data-action="confirm-wipe" style="color:var(--rust);font-weight:600;">Ja, wis alles</button> ';
+      html += '<button class="btn-link" data-action="cancel-wipe">Annuleren</button></span>';
+    } else {
+      html += '<button class="btn-link" data-action="ask-wipe">Logboek lokaal wissen</button>';
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function handleAddEntry(form) {
+    var date = form.elements["date"].value;
+    var routine = form.elements["routine"].value.trim();
+    var exercise = form.elements["exercise"].value.trim();
+    var weight = parseFloat(form.elements["weight"].value);
+    var sets = parseInt(form.elements["sets"].value, 10);
+    var reps = parseInt(form.elements["reps"].value, 10);
+    var notes = form.elements["notes"].value.trim();
+    var errEl = document.getElementById("form-error");
+
+    if (!date || !routine || !exercise || !form.elements["weight"].value || !form.elements["sets"].value || !form.elements["reps"].value) {
+      errEl.textContent = "Vul alle verplichte velden in.";
+      errEl.style.display = "block";
+      return;
+    }
+    entries.push({
+      id: "e-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      date: date, routine: routine, exercise: exercise, weight: weight, sets: sets, reps: reps, notes: notes
+    });
+    saveEntries();
+    lastDate = date;
+    lastRoutine = routine;
+    showToast("Sessie toegevoegd");
+    tab = "overzicht";
+    render();
+  }
+
+  function handleSaveSettings(form) {
+    config.username = form.elements["username"].value.trim();
+    config.repo = form.elements["repo"].value.trim();
+    config.token = form.elements["token"].value.trim();
+
+    try {
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+      showToast("Configificatie opgeslagen!");
+      tab = "overzicht";
+      loadEntries();
+    } catch(e) {
+      showToast("Opslaan config mislukt");
+    }
+  }
+
+  // ---- event delegation ----
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-action]");
+    if (!el) return;
+    var action = el.dataset.action;
+    var id = el.dataset.id;
+    if (action === "set-tab") { tab = el.dataset.tab; confirmDeleteId = null; render(); }
+    else if (action === "ask-delete") { confirmDeleteId = id; var analytics = computeAnalytics(entries); document.getElementById("history-list").innerHTML = buildHistoryListHTML(analytics); }
+    else if (action === "cancel-delete") { confirmDeleteId = null; var analytics = computeAnalytics(entries); document.getElementById("history-list").innerHTML = buildHistoryListHTML(analytics); }
+    else if (action === "confirm-delete") {
+      entries = entries.filter(function (x) { return x.id !== id; });
+      saveEntries(); confirmDeleteId = null; showToast("Sessie verwijderd"); render();
+    }
+    else if (action === "ask-wipe") { confirmWipe = true; render(); }
+    else if (action === "cancel-wipe") { confirmWipe = false; render(); }
+    else if (action === "confirm-wipe") { entries = []; saveEntries(); confirmWipe = false; showToast("Logboek gewist"); render(); }
+  });
+
+  document.addEventListener("change", function (e) {
+    if (e.target.id === "filter-routine") { filterRoutine = e.target.value; var analytics = computeAnalytics(entries); document.getElementById("history-list").innerHTML = buildHistoryListHTML(analytics); }
+    else if (e.target.id === "exercise-select") { selectedExercise = e.target.value; var analytics = computeAnalytics(entries); document.getElementById("chart-container").innerHTML = buildChartSVG(analytics.exerciseSeries[selectedExercise]); }
+  });
+
+  document.addEventListener("input", function (e) {
+    if (e.target.id === "search-input") { search = e.target.value; var analytics = computeAnalytics(entries); document.getElementById("history-list").innerHTML = buildHistoryListHTML(analytics); }
+  });
+
+  document.addEventListener("submit", function (e) {
+    if (e.target.id === "log-form") { e.preventDefault(); handleAddEntry(e.target); }
+    if (e.target.id === "settings-form") { e.preventDefault(); handleSaveSettings(e.target); }
+  });
+
+  // ---- init ----
+  loadEntries();
+})();
+</script>
+</body>
+</html>
