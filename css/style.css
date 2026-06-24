@@ -14,26 +14,62 @@
 body {
     background: var(--graphite); color: var(--chalk);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding-bottom: 60px;
+    padding-top: 20px;
+    padding-bottom: 90px;
 }
 .mono { font-family: ui-monospace, SFMono-Regular, monospace; }
 .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px; }
 
 /* Header & Navigation */
 header {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(10, 10, 12, 0.8);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
+    padding: 16px 0 8px 0;
+    margin-bottom: 10px;
 }
-.header-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
-.brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, #FFF, var(--steel)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-nav { display: flex; gap: 6px; }
+.header-inner { display: flex; align-items: center; justify-content: space-between; }
+.brand h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, #FFF, var(--steel)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    background: rgba(22, 22, 26, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    max-width: 720px;
+    margin: 0 auto;
+}
 .tab-btn {
-    padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600;
-    border: none; background: transparent; color: var(--steel); cursor: pointer; transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 0;
+    border-radius: 0;
+    font-size: 10px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--steel);
+    cursor: pointer;
+    transition: color 0.15s;
 }
-.tab-btn.active { background: var(--surface); color: var(--chalk); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.tab-btn .nav-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+.tab-btn.active {
+    background: transparent;
+    color: var(--sky);
+    box-shadow: none;
+    font-weight: 600;
+}
 
 /* Layout & Cards */
 main { padding: 20px 0; }
@@ -77,7 +113,7 @@ input:focus, select:focus { border-color: var(--sky); outline: none; }
 
 /* Sync Status */
 .cloud-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: 12px; font-weight: 600; border-radius: 10px; margin-bottom: 16px; background: var(--iron); border: 1px solid var(--border); }
-.cloud-log { font-family: monospace; font-size: 11px; background: #000; color: #ff453a; padding: 12px; border-radius: 10px; margin-bottom: 16px; white-space: pre-wrap; word-break: break-all; border: 1px solid #541614; }
+.cloud-log { font-family: monospace; font-size: 11px; background: #000; color: #ff453a; padding: 12px; border-radius: 10px; margin-bottom: 16px; white-space: pre-wrap; word-break: break-all; }
 
 /* Session & History Blocks */
 .session-block { border-left: 3px solid var(--rust); padding-left: 14px; margin-bottom: 14px; }
@@ -90,7 +126,16 @@ input:focus, select:focus { border-color: var(--sky); outline: none; }
 
 /* Toast Notifications */
 .toast {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
     background: rgba(34,34,39,0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border);
     padding: 14px 28px; border-radius: 24px; font-size: 14px; font-weight: 600; z-index: 1000; box-shadow: 0 12px 32px rgba(0,0,0,0.5);
 }
+
+/* Hulpklassen voor JS */
+.text-brass { color: var(--brass); }
+.text-steel { color: var(--steel); }
+.text-chalk { color: var(--chalk); }
+.bg-brass { fill: var(--brass); }
+.bg-rust { fill: var(--rust); }
+.border-error-log { border: 1px solid #541614; }
+.pill-active-state:active { background: var(--sky); border-color: var(--sky); }
