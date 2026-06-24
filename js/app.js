@@ -157,18 +157,20 @@
         const svgGridMarkup = referenceGridWeights.map(val => {
             const yPos = calculateYCoordinate(val);
             return `<line x1="${padLeft}" y1="${yPos}" x2="${canvasW - padRight}" y2="${yPos}" stroke="#2C2C32" stroke-dasharray="4"/>
-                   <text x="${padLeft - 10}" y="${yPos + 4}" font-size="11" font-weight="600" class="text-steel" text-anchor="end">${Math.round(val)} kg</text>`;
+                   <text x="${padLeft - 10}" y="${yPos + 4}" font-size="11" font-weight="600" fill="#8E8E93" text-anchor="end">${Math.round(val)} kg</text>`;
         }).join("");
 
+        // FIX: We gebruiken hier nu expliciet fill="#F5F5F9" (chalk) voor de gewichten boven de stip
         const svgNodesMarkup = dataPoints.map((p, i) => {
             const xPos = calculateXCoordinate(i), yPos = calculateYCoordinate(p.weight);
             return `<circle cx="${xPos}" cy="${yPos}" r="6" class="${p.isPR ? 'bg-brass' : 'bg-rust'}" stroke="#16161A" stroke-width="2"/>
-                   <text x="${xPos}" y="${yPos - 10}" font-size="11" font-weight="700" class="text-chalk" text-anchor="middle">${p.weight} kg</text>`;
+                   <text x="${xPos}" y="${yPos - 10}" font-size="11" font-weight="700" fill="#F5F5F9" text-anchor="middle">${p.weight} kg</text>`;
         }).join("");
 
+        // FIX: We gebruiken hier nu expliciet fill="#8E8E93" (steel) voor de datums onderaan
         const svgTimelineMarkup = dataPoints.map((p, i) => {
             if (i === 0 || i === dataPoints.length - 1 || dataPoints.length <= 5) {
-                return `<text x="${calculateXCoordinate(i)}" y="${canvasH - 12}" font-size="11" class="text-steel" text-anchor="middle">${formatHumanReadableDate(p.date).split(' 20')[0]}</text>`;
+                return `<text x="${calculateXCoordinate(i)}" y="${canvasH - 12}" font-size="11" fill="#8E8E93" text-anchor="middle">${formatHumanReadableDate(p.date).split(' 20')[0]}</text>`;
             } return "";
         }).join("");
 
